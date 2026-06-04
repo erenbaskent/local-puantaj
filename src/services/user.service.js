@@ -1,8 +1,14 @@
 import { findAll } from "../db/database.js"
+import mysqldb from "../models/index.js";
+import Role from "../models/role.model.js";
 import User from "../models/user.model.js";
 import { getUserEmails } from "./externalApiKey.service.js";
 
 export const getOracleUserData = async (unitCode) => {
+    const existUnitCode = await mysqldb.Unit.findOne({ where: { code: unitCode } });
+    if (existUnitCode) {
+        throw new Error("Birim bulunamadı!");
+    }
     const personnels = await findAll("SELECT * FROM baskent_personel_jguar where GOREV_YER_KODU = :unitCode and CALISIYOR_AYRILDI = 1", { unitCode: unitCode });
     if (personnels.length <= 0) {
         throw new Error("Hiç personel bulunamadı!");
@@ -45,4 +51,18 @@ export const getUserService = async (id) => {
         throw new Error("Personel bulunamadı!");
     }
     return user;
+}
+
+export const handleChangeRole = async (id, roleCode) => {
+    const existingUser = await User.findByPk(id);
+    if (!existingUser) {
+        throw new Error("Kullanıcı bulunamadı!");
+    }
+    const existingRole = await Role.findOne({ where: { code: roleCode } });
+    if (!existingRole) {
+        throw new Error("Rol bulunamadı!");
+    }
+    existingUser.role_code = roleCode;
+    await existingUser.save();
+    return existingUser;
 }
