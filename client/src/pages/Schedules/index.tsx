@@ -1,14 +1,17 @@
 import { useMemo, useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { useCalendar, useCreateSchedule, useUsers } from "@/features/schedules/hooks";
-import { useShifts } from "@/features/shifts/hooks";
-import { CalendarGrid } from "@/features/schedules/CalendarGrid";
-import { ScheduleForm } from "@/features/schedules/ScheduleForm";
+import { CalendarGrid } from "@/components/CalendarGrid";
+import { ScheduleForm } from "@/components/ScheduleForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
-import { Spinner } from "@/components/ui/spinner";
+import { useUIStore } from "@/store/uiStore";
+import {
+  MOCK_CALENDAR_ENTRIES,
+  MOCK_SHIFTS,
+  MOCK_USERS,
+  type MockCalendarEntry,
+} from "@/mocks/data";
 
 const MONTHS = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -18,22 +21,12 @@ const MONTHS = [
 const currentDate = new Date();
 
 export default function SchedulesPage() {
-  const { user, isAdmin } = useAuth();
+  const showNotification = useUIStore((s) => s.showNotification);
   const [year, setYear] = useState(currentDate.getFullYear());
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(
-    user?.id ?? null
-  );
+  const [selectedUserId, setSelectedUserId] = useState(1);
+  const [entries, setEntries] = useState(MOCK_CALENDAR_ENTRIES);
   const [assignDate, setAssignDate] = useState<string | null>(null);
-
-  const { data: users, isLoading: usersLoading } = useUsers();
-  const { data: shifts } = useShifts();
-  const { data: entries, isLoading: calendarLoading } = useCalendar(
-    year,
-    month,
-    selectedUserId
-  );
-  const createSchedule = useCreateSchedule();
 
   const yearOptions = useMemo(() => {
     const y = currentDate.getFullYear();
@@ -43,27 +36,33 @@ export default function SchedulesPage() {
   const closeAssignModal = () => setAssignDate(null);
 
   const handleAssign = (values: { shift_code: string; note?: string }) => {
-    if (!assignDate || !selectedUserId) return;
-    createSchedule.mutate(
-      {
-        userId: selectedUserId,
-        work_date: assignDate,
-        shift_code: values.shift_code,
-        note: values.note,
-      },
-      { onSuccess: closeAssignModal }
-    );
-  };
+    if (!assignDate) return;
+    const shift = MOCK_SHIFTS.find((s) => s.code === values.shift_code);
+    if (!shift) return;
 
-  const canAssign = isAdmin;
+    const newEntry: MockCalendarEntry = {
+      work_date: assignDate,
+      shift_code: shift.code,
+      shift_start: shift.start_time,
+      shift_end: shift.end_time,
+      note: values.note,
+    };
+
+    setEntries((prev) => {
+      const filtered = prev.filter((e) => e.work_date !== assignDate);
+      return [...filtered, newEntry];
+    });
+
+    showNotification("Vardiya ataması kaydedildi (örnek)", "success");
+    closeAssignModal();
+  };
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold text-stone-900">Puantaj Takvimi</h1>
         <p className="text-sm text-stone-500 mt-1">
-          Aylık vardiya planını görüntüleyin
-          {canAssign && " ve atama yapın"}
+          Aylık vardiya planını görüntüleyin ve atama yapın
         </p>
       </div>
 
@@ -79,9 +78,7 @@ export default function SchedulesPage() {
                 className="w-28"
               >
                 {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
+                  <option key={y} value={y}>{y}</option>
                 ))}
               </Select>
             </div>
@@ -95,68 +92,42 @@ export default function SchedulesPage() {
                 className="w-36"
               >
                 {MONTHS.map((name, i) => (
-                  <option key={name} value={i + 1}>
-                    {name}
-                  </option>
+                  <option key={name} value={i + 1}>{name}</option>
                 ))}
               </Select>
             </div>
 
-            {isAdmin && (
-              <div className="flex flex-col gap-1.5 min-w-[220px]">
-                <Label htmlFor="user">Personel</Label>
-                {usersLoading ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Select
-                    id="user"
-                    value={selectedUserId ?? ""}
-                    onChange={(e) => setSelectedUserId(Number(e.target.value))}
-                  >
-                    <option value="">Personel seçin</option>
-                    {users?.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.full_name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </div>
-            )}
+            <div className="flex flex-col gap-1.5 min-w-[220px]">
+              <Label htmlFor="user">Personel</Label>
+              <Select
+                id="user"
+                value={selectedUserId}
+                onChange={(e) => setSelectedUserId(Number(e.target.value))}
+              >
+                {MOCK_USERS.map((u) => (
+                  <option key={u.id} value={u.id}>{u.full_name}</option>
+                ))}
+              </Select>
+            </div>
           </div>
 
-          {calendarLoading ? (
-            <div className="flex justify-center py-16">
-              <Spinner />
-            </div>
-          ) : !selectedUserId ? (
-            <p className="text-center text-sm text-stone-500 py-16">
-              Takvimi görüntülemek için personel seçin.
-            </p>
-          ) : (
-            <CalendarGrid
-              year={year}
-              month={month}
-              entries={entries ?? []}
-              onDayClick={setAssignDate}
-              canAssign={canAssign}
-            />
-          )}
+          <CalendarGrid
+            year={year}
+            month={month}
+            entries={entries}
+            onDayClick={setAssignDate}
+            canAssign
+          />
         </CardContent>
       </Card>
 
-      <Modal
-        open={!!assignDate}
-        onClose={closeAssignModal}
-        title="Vardiya Ata"
-      >
+      <Modal open={!!assignDate} onClose={closeAssignModal} title="Vardiya Ata">
         {assignDate && (
           <ScheduleForm
             workDate={assignDate}
-            shifts={shifts ?? []}
+            shifts={MOCK_SHIFTS}
             onSubmit={handleAssign}
             onCancel={closeAssignModal}
-            isLoading={createSchedule.isPending}
           />
         )}
       </Modal>

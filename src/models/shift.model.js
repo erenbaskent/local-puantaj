@@ -19,6 +19,16 @@ const Shift = sequelize.define("Shift", {
     end_time: {
         type: DataTypes.TIME,
         allowNull: true
+    },
+    status: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true 
+    },
+    color: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: '#fff'
     }
 }, {
     timestamps: true

@@ -4,7 +4,7 @@ import { toUpperCase } from "../helpers/toUpperCase.js";
 import { parseTime } from "../helpers/parseTime.js";
 
 export const handleCreateShift = async (data) => {
-    const { name, code, start_time, end_time } = data;
+    const { name, code, start_time, end_time, color } = data;
     const formattedCode = toUpperCase(code);
     const existingShift = await mysqldb.Shift.findOne({
         where: { code: code, start_time: start_time, end_time: end_time }
@@ -17,7 +17,8 @@ export const handleCreateShift = async (data) => {
         name,
         code: formattedCode,
         start_time,
-        end_time
+        end_time,
+        color: color
     })
 
     return shift;
@@ -37,7 +38,7 @@ export const handleGetShift = async (id) => {
 }
 
 export const handleUpdateShift = async (id, data) => {
-    const { name, code, start_time, end_time } = data;
+    const { name, code, start_time, end_time, color } = data;
 
     const existingShift = await mysqldb.Shift.findByPk(id);
     if (!existingShift) throw new Error("Düzenlenecek shift bulunamadı!");
@@ -74,9 +75,24 @@ export const handleUpdateShift = async (id, data) => {
         existingShift.end_time = formattedEndTime;
     }
 
+    if (color) {
+        existingShift.color = color;
+    }
+
     await existingShift.save();
 
     return existingShift;
+}
+
+export const handleChangeShiftStatus = async (id, status) => {
+    const existingShift = await Shift.findByPk(id);
+    if (!existingShift) {
+        throw new Error("Shift bulunamadı!");
+    }
+    if (status == existingShift.status) throw new Error(`Shift statüsü zaten ${status == 1 ? "Aktif" : "Pasif"}`);
+    existingShift.status = status;
+    await existingShift.save();
+    return existingUser;
 }
 
 export const handleDeleteShift = async (id) => {

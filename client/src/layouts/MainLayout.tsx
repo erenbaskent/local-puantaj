@@ -1,29 +1,34 @@
-import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useUIStore } from "@/store/uiStore";
-import { useAuth } from "@/hooks/useAuth";
-import { useLogout } from "@/features/auth/hooks";
 import { Toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { MOCK_CURRENT_USER } from "@/mocks/data";
 
 const NAV_ITEMS = [
-  { to: "/schedules", label: "Puantaj Takvimi", icon: "📅", adminOnly: false },
-  { to: "/shifts", label: "Vardiyalar", icon: "🕐", adminOnly: true },
+  { to: "/schedules", label: "Puantaj Takvimi", icon: "📅" },
+  { to: "/my-calendar", label: "Kişisel Takvim", icon: "📋" },
+  { to: "/shifts", label: "Vardiyalar", icon: "🕐" },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
   "/schedules": "Puantaj Takvimi",
+  "/my-calendar": "Kişisel Takvim",
   "/shifts": "Vardiyalar",
 };
 
 export default function MainLayout() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
-  const { user, isAdmin } = useAuth();
-  const logout = useLogout();
+  const showNotification = useUIStore((s) => s.showNotification);
+  const navigate = useNavigate();
   const location = useLocation();
 
-  const visibleNav = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
   const pageTitle = PAGE_TITLES[location.pathname] ?? "Puantaj Paneli";
+
+  const handleLogout = () => {
+    showNotification("Çıkış yapıldı (örnek)", "info");
+    navigate("/login");
+  };
 
   return (
     <div className="flex h-screen bg-stone-100 overflow-hidden">
@@ -42,7 +47,7 @@ export default function MainLayout() {
         </div>
 
         <nav className="flex-1 p-2 flex flex-col gap-0.5">
-          {visibleNav.map((item) => (
+          {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -62,14 +67,17 @@ export default function MainLayout() {
           {sidebarOpen ? (
             <div className="flex items-center gap-2 px-2 py-1.5">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{user?.full_name}</p>
-                <p className="text-xs text-stone-400">{user?.role_code}</p>
+                <p className="text-xs font-medium truncate">
+                  {MOCK_CURRENT_USER.full_name}
+                </p>
+                <p className="text-xs text-stone-400">
+                  {MOCK_CURRENT_USER.role_code}
+                </p>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => logout.mutate()}
-                disabled={logout.isPending}
+                onClick={handleLogout}
                 title="Çıkış"
                 className="text-stone-400 hover:text-stone-600"
               >
@@ -78,13 +86,7 @@ export default function MainLayout() {
             </div>
           ) : (
             <div className="flex justify-center py-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => logout.mutate()}
-                disabled={logout.isPending}
-                title="Çıkış"
-              >
+              <Button variant="ghost" size="icon" onClick={handleLogout} title="Çıkış">
                 ⇥
               </Button>
             </div>

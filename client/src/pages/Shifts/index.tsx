@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { useShifts, useCreateShift, useUpdateShift, useDeleteShift } from "@/features/shifts/hooks";
-import { ShiftForm } from "@/features/shifts/ShiftForm";
-import type { ShiftFormValues } from "@/features/shifts/schemas";
+import { ShiftForm, type ShiftFormValues } from "@/components/ShiftForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,26 +11,26 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Modal } from "@/components/ui/modal";
-import { Spinner } from "@/components/ui/spinner";
-import { formatTimeDisplay } from "@/lib/formatTime";
-import type { Shift } from "@/types";
+import { useUIStore } from "@/store/uiStore";
+import { MOCK_SHIFTS, type MockShift } from "@/mocks/data";
+
+function formatTime(value: string) {
+  return value.slice(0, 5);
+}
 
 export default function ShiftsPage() {
-  const { data: shifts, isLoading } = useShifts();
-  const createShift = useCreateShift();
-  const updateShift = useUpdateShift();
-  const deleteShift = useDeleteShift();
-
+  const showNotification = useUIStore((s) => s.showNotification);
+  const [shifts, setShifts] = useState(MOCK_SHIFTS);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingShift, setEditingShift] = useState<Shift | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Shift | null>(null);
+  const [editingShift, setEditingShift] = useState<MockShift | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MockShift | null>(null);
 
   const openCreate = () => {
     setEditingShift(null);
     setModalOpen(true);
   };
 
-  const openEdit = (shift: Shift) => {
+  const openEdit = (shift: MockShift) => {
     setEditingShift(shift);
     setModalOpen(true);
   };
@@ -44,23 +42,40 @@ export default function ShiftsPage() {
 
   const handleSubmit = (values: ShiftFormValues) => {
     if (editingShift) {
-      updateShift.mutate(
-        { id: editingShift.id, payload: values },
-        { onSuccess: closeModal }
+      setShifts((prev) =>
+        prev.map((s) =>
+          s.id === editingShift.id
+            ? {
+                ...s,
+                name: values.name,
+                code: values.code,
+                start_time: `${values.start_time}:00`,
+                end_time: `${values.end_time}:00`,
+              }
+            : s
+        )
       );
+      showNotification("Vardiya güncellendi (örnek)", "success");
     } else {
-      createShift.mutate(values, { onSuccess: closeModal });
+      const newShift: MockShift = {
+        id: Date.now(),
+        name: values.name,
+        code: values.code,
+        start_time: `${values.start_time}:00`,
+        end_time: `${values.end_time}:00`,
+      };
+      setShifts((prev) => [...prev, newShift]);
+      showNotification("Vardiya oluşturuldu (örnek)", "success");
     }
+    closeModal();
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    deleteShift.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
-    });
+    setShifts((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+    showNotification("Vardiya silindi (örnek)", "success");
+    setDeleteTarget(null);
   };
-
-  const isFormLoading = createShift.isPending || updateShift.isPending;
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,11 +94,7 @@ export default function ShiftsPage() {
           <CardTitle>Vardiya Listesi</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Spinner />
-            </div>
-          ) : !shifts?.length ? (
+          {!shifts.length ? (
             <p className="text-center text-sm text-stone-500 py-12">
               Henüz vardiya tanımlanmamış.
             </p>
@@ -107,22 +118,14 @@ export default function ShiftsPage() {
                         {shift.code}
                       </code>
                     </TableCell>
-                    <TableCell>{formatTimeDisplay(shift.start_time)}</TableCell>
-                    <TableCell>{formatTimeDisplay(shift.end_time)}</TableCell>
+                    <TableCell>{formatTime(shift.start_time)}</TableCell>
+                    <TableCell>{formatTime(shift.end_time)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEdit(shift)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => openEdit(shift)}>
                           Düzenle
                         </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteTarget(shift)}
-                        >
+                        <Button variant="danger" size="sm" onClick={() => setDeleteTarget(shift)}>
                           Sil
                         </Button>
                       </div>
@@ -140,12 +143,7 @@ export default function ShiftsPage() {
         onClose={closeModal}
         title={editingShift ? "Vardiya Düzenle" : "Yeni Vardiya"}
       >
-        <ShiftForm
-          shift={editingShift}
-          onSubmit={handleSubmit}
-          onCancel={closeModal}
-          isLoading={isFormLoading}
-        />
+        <ShiftForm shift={editingShift} onSubmit={handleSubmit} onCancel={closeModal} />
       </Modal>
 
       <Modal
@@ -161,12 +159,8 @@ export default function ShiftsPage() {
           <Button variant="outline" onClick={() => setDeleteTarget(null)}>
             İptal
           </Button>
-          <Button
-            variant="danger"
-            onClick={handleDelete}
-            disabled={deleteShift.isPending}
-          >
-            {deleteShift.isPending ? <Spinner size="sm" /> : "Sil"}
+          <Button variant="danger" onClick={handleDelete}>
+            Sil
           </Button>
         </div>
       </Modal>

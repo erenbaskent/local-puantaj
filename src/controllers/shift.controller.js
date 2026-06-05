@@ -1,12 +1,12 @@
-import { handleCreateShift, handleDeleteShift, handleGetShift, handleGetShifts, handleUpdateShift } from "../services/shift.service.js";
+import { handleChangeShiftStatus, handleCreateShift, handleDeleteShift, handleGetShift, handleGetShifts, handleUpdateShift } from "../services/shift.service.js";
 
 export const createShift = async (req, res, next) => {
-    const { name, code, start_time, end_time } = req.body;
+    const { name, code, start_time, end_time, color } = req.body;
     try {
         if (!name || !code || !start_time || !end_time) {
             return res.status(400).json({ ok: false, messsage: 'Shift ismi, shit kodu, başlama ve bitiş saatlerini boş bırakmadığınızdan emin olun!' });
         }
-        const result = await handleCreateShift({ name, code, start_time, end_time })
+        const result = await handleCreateShift({ name, code, start_time, end_time, color })
         return res.status(200).json({ data: result });
     } catch (error) {
         console.error(error);
@@ -46,6 +46,21 @@ export const updateShift = async (req, res, next) => {
             return res.status(400).json({ ok: false, message: "Güncellemek istediğiniz shifti seçmelisiniz!" });
         }
         const result = await handleUpdateShift(id, data);
+        return res.status(200).json({ data: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, message: error.message });
+    }
+}
+
+export const changeShiftStatus = async (req, res, next) => {
+    const { id } = req.params;
+    const { status } = req.body;
+    try {
+        if (!id) {
+            return res.status(400).json({ ok: false, message: "Shift bilgisi gereklidir!" });
+        }
+        const result = await handleChangeShiftStatus(id, status);
         return res.status(200).json({ data: result });
     } catch (error) {
         console.error(error);

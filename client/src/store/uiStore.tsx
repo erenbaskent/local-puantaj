@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import type { Notification } from "@/types";
+
+export interface Notification {
+  message: string;
+  type: "success" | "error" | "info";
+}
 
 interface UIStore {
   sidebarOpen: boolean;
