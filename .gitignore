@@ -1,2 +1,17 @@
 node_modules
 .env
+
+client/dist
+client/dist-ssr
+client/*.local
+
+# Editör / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

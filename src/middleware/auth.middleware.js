@@ -16,7 +16,7 @@ export function authenticateToken(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, secret);
-        req.user = { id: decoded.id, username: decoded.username };
+        req.user = { id: decoded.id, username: decoded.username, role: decoded.role };
         next();
     } catch {
         return res.status(403).json({ ok: false, message: "Geçersiz veya süresi dolmuş token" });

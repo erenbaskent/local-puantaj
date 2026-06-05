@@ -66,3 +66,14 @@ export const handleChangeRole = async (id, roleCode) => {
     await existingUser.save();
     return existingUser;
 }
+
+export const handleChangeUserStatus = async (id, status) => {
+    const existingUser = await User.findByPk(id);
+    if (!existingUser) {
+        throw new Error("Kullanıcı bulunamadı!");
+    }
+    if (status == existingUser.status) throw new Error(`Kullanıcınnın statüsü zaten ${status == 1 ? "Aktif" : "Pasif"}`);
+    existingUser.status = status;
+    await existingUser.save();
+    return existingUser;
+}
