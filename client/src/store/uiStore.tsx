@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { create } from "zustand";
 
 export interface Notification {
@@ -19,9 +20,14 @@ export const useUIStore = create<UIStore>((set) => ({
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
-  showNotification: (message, type = "success") => {
-    set({ notification: { message, type } });
-    setTimeout(() => set({ notification: null }), 3000);
+  showNotification: (
+    message: string,
+    type: string = "success",
+    duration: number = 2000,
+  ) => {
+    if (type === "success") toast.success(message, { duration: duration });
+    else if (type === "error") toast.error(message, { duration: duration });
+    else toast.info(message, { duration: duration });
   },
 
   clearNotification: () => set({ notification: null }),

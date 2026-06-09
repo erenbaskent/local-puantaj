@@ -4,6 +4,7 @@ import LoginPage from "@/pages/Login";
 import SchedulesPage from "@/pages/Schedules";
 import PersonalCalendarPage from "@/pages/PersonalCalendar";
 import ShiftsPage from "@/pages/Shifts";
+import { ProtectedRoute } from "./guards";
 
 export const router = createBrowserRouter([
   {
@@ -12,12 +13,17 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <MainLayout />,
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <Navigate to="/schedules" replace /> },
-      { path: "schedules", element: <SchedulesPage /> },
-      { path: "my-calendar", element: <PersonalCalendarPage /> },
-      { path: "shifts", element: <ShiftsPage /> },
+      {
+        element: <MainLayout />,
+        children: [
+          { index: true, element: <Navigate to="/schedules" replace /> },
+          { path: "schedules", element: <SchedulesPage /> },
+          { path: "my-calendar", element: <PersonalCalendarPage /> },
+          { path: "shifts", element: <ShiftsPage /> },
+        ],
+      },
     ],
   },
 ]);

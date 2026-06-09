@@ -1,8 +1,9 @@
-import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useLocation } from "react-router-dom";
 import { useUIStore } from "@/store/uiStore";
 import { Toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { MOCK_CURRENT_USER } from "@/mocks/data";
+import { useAuthStore } from "@/store/authStore";
+import { logoutApi } from "@/api/auth";
 
 const NAV_ITEMS = [
   { to: "/schedules", label: "Puantaj Takvimi", icon: "📅" },
@@ -20,14 +21,19 @@ export default function MainLayout() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   const showNotification = useUIStore((s) => s.showNotification);
-  const navigate = useNavigate();
   const location = useLocation();
+  const user = useAuthStore((s) => s.user);
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
   const pageTitle = PAGE_TITLES[location.pathname] ?? "Puantaj Paneli";
 
-  const handleLogout = () => {
-    showNotification("Çıkış yapıldı (örnek)", "info");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await logoutApi();
+      clearAuth();
+    } catch (error) {
+      showNotification(error.message, "error");
+    }
   };
 
   return (
@@ -42,7 +48,9 @@ export default function MainLayout() {
             P
           </div>
           {sidebarOpen && (
-            <span className="font-semibold text-sm tracking-tight">Puantaj</span>
+            <span className="font-semibold text-sm tracking-tight">
+              Puantaj
+            </span>
           )}
         </div>
 
@@ -67,12 +75,8 @@ export default function MainLayout() {
           {sidebarOpen ? (
             <div className="flex items-center gap-2 px-2 py-1.5">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">
-                  {MOCK_CURRENT_USER.full_name}
-                </p>
-                <p className="text-xs text-stone-400">
-                  {MOCK_CURRENT_USER.role_code}
-                </p>
+                <p className="text-xs font-medium truncate">{user.full_name}</p>
+                <p className="text-xs text-stone-400">{user.role_code}</p>
               </div>
               <Button
                 variant="ghost"
@@ -86,7 +90,12 @@ export default function MainLayout() {
             </div>
           ) : (
             <div className="flex justify-center py-1">
-              <Button variant="ghost" size="icon" onClick={handleLogout} title="Çıkış">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={clearAuth}
+                title="Çıkış"
+              >
                 ⇥
               </Button>
             </div>
@@ -102,7 +111,9 @@ export default function MainLayout() {
           >
             ☰
           </button>
-          <span className="text-sm font-medium text-stone-700">{pageTitle}</span>
+          <span className="text-sm font-medium text-stone-700">
+            {pageTitle}
+          </span>
         </header>
         <main className="flex-1 overflow-auto p-6">
           <Outlet />

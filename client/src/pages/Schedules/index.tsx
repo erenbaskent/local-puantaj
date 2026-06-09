@@ -6,12 +6,6 @@ import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Modal } from "@/components/ui/modal";
 import { useUIStore } from "@/store/uiStore";
-import {
-  MOCK_CALENDAR_ENTRIES,
-  MOCK_SHIFTS,
-  MOCK_USERS,
-  type MockCalendarEntry,
-} from "@/mocks/data";
 
 const MONTHS = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
@@ -25,7 +19,6 @@ export default function SchedulesPage() {
   const [year, setYear] = useState(currentDate.getFullYear());
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
   const [selectedUserId, setSelectedUserId] = useState(1);
-  const [entries, setEntries] = useState(MOCK_CALENDAR_ENTRIES);
   const [assignDate, setAssignDate] = useState<string | null>(null);
 
   const yearOptions = useMemo(() => {
@@ -35,27 +28,10 @@ export default function SchedulesPage() {
 
   const closeAssignModal = () => setAssignDate(null);
 
-  const handleAssign = (values: { shift_code: string; note?: string }) => {
-    if (!assignDate) return;
-    const shift = MOCK_SHIFTS.find((s) => s.code === values.shift_code);
-    if (!shift) return;
+  const getAllUserCalendatData = async() => {
+    
+  }
 
-    const newEntry: MockCalendarEntry = {
-      work_date: assignDate,
-      shift_code: shift.code,
-      shift_start: shift.start_time,
-      shift_end: shift.end_time,
-      note: values.note,
-    };
-
-    setEntries((prev) => {
-      const filtered = prev.filter((e) => e.work_date !== assignDate);
-      return [...filtered, newEntry];
-    });
-
-    showNotification("Vardiya ataması kaydedildi (örnek)", "success");
-    closeAssignModal();
-  };
 
   return (
     <div className="flex flex-col gap-6">
